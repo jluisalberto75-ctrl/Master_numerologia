@@ -1,0 +1,12 @@
+.env
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+venv/
+env/
+.DS_Store
+*.zip
+*_old.py
+*_old*.py
+* old*.py
