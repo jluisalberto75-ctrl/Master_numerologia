@@ -46,6 +46,24 @@ def _asegurar_columnas_usuarios(cursor):
             cursor.execute(f"ALTER TABLE usuarios ADD COLUMN {columna} {tipo}")
 
 
+def _asegurar_columnas_compatibilidades(cursor):
+    """
+    Migración no destructiva para agregar los dos ejes nuevos de
+    compatibilidad (Expresión y Alma) sin tocar las filas que ya
+    existían solo con el eje de Camino de Vida.
+    """
+    cursor.execute("PRAGMA table_info(compatibilidades)")
+    columnas_existentes = {fila[1] for fila in cursor.fetchall()}
+
+    columnas_nuevas = {
+        "numero_compatibilidad_expresion": "INTEGER",
+        "numero_compatibilidad_alma": "INTEGER",
+    }
+    for columna, tipo in columnas_nuevas.items():
+        if columna not in columnas_existentes:
+            cursor.execute(f"ALTER TABLE compatibilidades ADD COLUMN {columna} {tipo}")
+
+
 def iniciar_db():
     conexion = sqlite3.connect(DB_PATH)
     cursor = conexion.cursor()
@@ -96,6 +114,13 @@ def iniciar_db():
     # adelante algo como "ver compatibilidades anteriores" sin recalcular,
     # y para que la IA tenga contexto de con quién ya se habló antes si el
     # usuario vuelve a preguntar por la misma persona.
+    #
+    # numero_compatibilidad guarda el eje de Camino de Vida (el "general",
+    # por compatibilidad con datos guardados antes de que existieran los
+    # otros dos ejes). numero_compatibilidad_expresion y
+    # numero_compatibilidad_alma son los otros dos ejes — ver
+    # calcular_compatibilidad_completa() en numerologia_calculo.py para
+    # el porqué de mirar tres números y no uno solo.
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS compatibilidades (
@@ -104,11 +129,14 @@ def iniciar_db():
             nombre_otra_persona TEXT,
             fecha_nacimiento_otra_persona TEXT,
             numero_compatibilidad INTEGER,
+            numero_compatibilidad_expresion INTEGER,
+            numero_compatibilidad_alma INTEGER,
             fecha_consulta TEXT,
             FOREIGN KEY (telegram_id) REFERENCES usuarios(telegram_id)
         )
         """
     )
+    _asegurar_columnas_compatibilidades(cursor)
 
     # ---------- Memoria abierta del agente ----------
     # Equivalente al notas_agente del bot de running, pero con 'tipo' sin

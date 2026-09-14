@@ -107,6 +107,16 @@ def calcular_personalidad(nombre_completo: str) -> int:
     return reducir_a_digito(_suma_letras(nombre, filtro=lambda c: c not in VOCALES))
 
 
+def calcular_numero_cumpleanos(dia_nacimiento: int) -> int:
+    """
+    Número de Cumpleaños: el día de nacimiento reducido a un solo
+    dígito. Es el más simple de los cinco números "clásicos" de la
+    carta (Camino de Vida, Expresión, Alma, Personalidad, Cumpleaños) —
+    no depende del nombre, solo del día.
+    """
+    return reducir_a_digito(dia_nacimiento)
+
+
 def calcular_anio_personal(dia: int, mes: int, anio_actual: int) -> int:
     """
     Año Personal: se recalcula cada año (por eso NO se guarda como
@@ -158,13 +168,55 @@ def calcular_numero_compatibilidad(
     dia1: int, mes1: int, anio1: int, dia2: int, mes2: int, anio2: int
 ) -> int:
     """
-    Número de compatibilidad entre dos personas, a partir de sus Caminos
-    de Vida (reduce(camino_1 + camino_2)) — mismo criterio que el
-    ejemplo del diseño original (Camino 1 + Camino 7 -> 8).
+    Número de compatibilidad "general" entre dos personas, a partir de
+    sus Caminos de Vida (reduce(camino_1 + camino_2)) — mismo criterio
+    que el ejemplo del diseño original (Camino 1 + Camino 7 -> 8). Se
+    mantiene como función simple porque algunas partes del bot solo
+    necesitan este número suelto; para la interpretación completa de
+    compatibilidad usar calcular_compatibilidad_completa().
     """
     camino1 = calcular_camino_vida(dia1, mes1, anio1)
     camino2 = calcular_camino_vida(dia2, mes2, anio2)
     return reducir_a_digito(camino1 + camino2)
+
+
+def calcular_compatibilidad_completa(
+    nombre_completo_1: str, dia1: int, mes1: int, anio1: int,
+    nombre_completo_2: str, dia2: int, mes2: int, anio2: int,
+) -> dict:
+    """
+    Compatibilidad en tres ejes, no uno solo — un maestro real nunca da
+    compatibilidad mirando un único número. Cada eje mira algo distinto
+    de la relación:
+    - camino_vida: hacia dónde va cada quién en la vida, si el proyecto
+      de fondo de ambos tiende a alinearse o a tensionarse.
+    - expresion: cómo se comunican y se muestran hacia afuera el uno al
+      otro.
+    - alma: si conectan a nivel emocional/motivacional, más allá de lo
+      que se ve por fuera.
+    Cada eje se calcula igual: reduce(número_persona1 + número_persona2).
+    Se devuelven también los números individuales de cada persona (no
+    solo el resultado combinado) porque el maestro de IA los necesita
+    para explicar POR QUÉ da ese resultado, no solo repetirlo.
+    """
+    camino1, camino2 = calcular_camino_vida(dia1, mes1, anio1), calcular_camino_vida(dia2, mes2, anio2)
+    expresion1, expresion2 = calcular_expresion(nombre_completo_1), calcular_expresion(nombre_completo_2)
+    alma1, alma2 = calcular_alma(nombre_completo_1), calcular_alma(nombre_completo_2)
+
+    return {
+        "camino_vida": {
+            "persona1": camino1, "persona2": camino2,
+            "compatibilidad": reducir_a_digito(camino1 + camino2),
+        },
+        "expresion": {
+            "persona1": expresion1, "persona2": expresion2,
+            "compatibilidad": reducir_a_digito(expresion1 + expresion2),
+        },
+        "alma": {
+            "persona1": alma1, "persona2": alma2,
+            "compatibilidad": reducir_a_digito(alma1 + alma2),
+        },
+    }
 
 
 def parsear_fecha_iso(fecha_iso: str):
@@ -211,6 +263,7 @@ def perfil_numerologico_completo(
         "expresion": calcular_expresion(nombre_completo),
         "alma": calcular_alma(nombre_completo),
         "personalidad": calcular_personalidad(nombre_completo),
+        "numero_cumpleanos": calcular_numero_cumpleanos(dia),
         "anio_personal": calcular_anio_personal(dia, mes, anio),
         "anio_personal_calculado_para": anio,
     }

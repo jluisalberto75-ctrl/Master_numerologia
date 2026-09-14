@@ -19,8 +19,7 @@ from telegram.ext import (
 from numerologia_db import DB_PATH, iniciar_db
 from numerologia_contexto import obtener_contexto_numerologico
 from numerologia_calculo import (
-    calcular_camino_vida,
-    calcular_numero_compatibilidad,
+    calcular_compatibilidad_completa,
     calcular_numero_del_dia,
     parsear_fecha_iso,
 )
@@ -118,16 +117,24 @@ def guardar_lectura(telegram_id, texto, anio):
     conexion.close()
 
 
-def guardar_compatibilidad(telegram_id, nombre_otra_persona, fecha_otra_persona_iso, numero_compatibilidad):
+def guardar_compatibilidad(
+    telegram_id, nombre_otra_persona, fecha_otra_persona_iso,
+    numero_compatibilidad_camino, numero_compatibilidad_expresion, numero_compatibilidad_alma,
+):
     conexion = sqlite3.connect(DB_PATH)
     cursor = conexion.cursor()
     cursor.execute(
         """
         INSERT INTO compatibilidades
-            (telegram_id, nombre_otra_persona, fecha_nacimiento_otra_persona, numero_compatibilidad, fecha_consulta)
-        VALUES (?, ?, ?, ?, ?)
+            (telegram_id, nombre_otra_persona, fecha_nacimiento_otra_persona,
+             numero_compatibilidad, numero_compatibilidad_expresion, numero_compatibilidad_alma, fecha_consulta)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (telegram_id, nombre_otra_persona, fecha_otra_persona_iso, numero_compatibilidad, datetime.now().isoformat()),
+        (
+            telegram_id, nombre_otra_persona, fecha_otra_persona_iso,
+            numero_compatibilidad_camino, numero_compatibilidad_expresion, numero_compatibilidad_alma,
+            datetime.now().isoformat(),
+        ),
     )
     conexion.commit()
     conexion.close()
@@ -440,7 +447,16 @@ async def iniciar_compatibilidad(update: Update, context: ContextTypes.DEFAULT_T
 
     context.user_data.clear()
     await update.message.reply_text(
-        "💑 Vamos a ver la compatibilidad. ¿Cómo se llama la otra persona? (nombre completo)",
+        "💑 Vamos a ver la compatibilidad.\n\n"
+        "Voy a revisar tres cosas distintas entre ustedes dos, no un solo "
+        "número: qué tan alineados tienden a estar sus proyectos de vida "
+        "(Camino de Vida), cómo tienden a comunicarse (Expresión), y si "
+        "conectan a nivel emocional más allá de lo que se ve por fuera "
+        "(Alma). Puede que en un eje salga muy compatible y en otro no "
+        "tanto — eso es información real, no una contradicción.\n\n"
+        "Para calcularlo necesito el nombre completo y la fecha de "
+        "nacimiento de la otra persona.\n\n"
+        "¿Cómo se llama? (nombre completo)",
         reply_markup=ReplyKeyboardRemove(),
     )
     return COMPAT_NOMBRE
@@ -496,18 +512,21 @@ async def recibir_dia_otra_persona(update: Update, context: ContextTypes.DEFAULT
     usuario = obtener_usuario(telegram_id)
     dia_propio, mes_propio, anio_propio = parsear_fecha_iso(usuario["fecha_nacimiento"])
 
-    numero_compatibilidad = calcular_numero_compatibilidad(
-        dia_propio, mes_propio, anio_propio, dia, mes, anio
+    compatibilidad_completa = calcular_compatibilidad_completa(
+        usuario["nombre_completo"], dia_propio, mes_propio, anio_propio,
+        nombre_otra_persona, dia, mes, anio,
     )
-    camino_vida_otra_persona = calcular_camino_vida(dia, mes, anio)
 
-    guardar_compatibilidad(telegram_id, nombre_otra_persona, fecha_otra_persona_iso, numero_compatibilidad)
+    guardar_compatibilidad(
+        telegram_id, nombre_otra_persona, fecha_otra_persona_iso,
+        numero_compatibilidad_camino=compatibilidad_completa["camino_vida"]["compatibilidad"],
+        numero_compatibilidad_expresion=compatibilidad_completa["expresion"]["compatibilidad"],
+        numero_compatibilidad_alma=compatibilidad_completa["alma"]["compatibilidad"],
+    )
 
     await context.bot.send_chat_action(chat_id=query.message.chat_id, action="typing")
     contexto = obtener_contexto_numerologico(telegram_id, anio=date.today().year)
-    respuesta = pedir_interpretacion_compatibilidad(
-        contexto, nombre_otra_persona, camino_vida_otra_persona, numero_compatibilidad
-    )
+    respuesta = pedir_interpretacion_compatibilidad(contexto, nombre_otra_persona, compatibilidad_completa)
 
     if respuesta:
         await enviar_mensaje_largo(query.message.chat_id, respuesta, context, reply_markup=teclado_principal())

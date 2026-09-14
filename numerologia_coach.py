@@ -106,14 +106,14 @@ def pedir_lectura_completa(contexto: dict):
         return None
 
 
-def pedir_interpretacion_compatibilidad(
-    contexto: dict, nombre_otra_persona: str, camino_vida_otra_persona: int, numero_compatibilidad: int
-):
+def pedir_interpretacion_compatibilidad(contexto: dict, nombre_otra_persona: str, compatibilidad_completa: dict):
     """
-    Genera la interpretación de una compatibilidad ya calculada (el
-    número de compatibilidad y el camino de vida de la otra persona
-    vienen resueltos desde numerologia_calculo.py, nunca los calcula la
-    IA).
+    Genera la interpretación de una compatibilidad ya calculada en tres
+    ejes (Camino de Vida, Expresión, Alma) — compatibilidad_completa
+    viene de calcular_compatibilidad_completa() en
+    numerologia_calculo.py, con los números individuales de ambas
+    personas y el resultado combinado de cada eje. La IA nunca calcula
+    ni combina estos números, solo los interpreta.
     """
     if not contexto:
         return None
@@ -126,17 +126,13 @@ def pedir_interpretacion_compatibilidad(
 
     contexto_json = json.dumps(contexto, ensure_ascii=False)
     datos_otra_persona = json.dumps(
-        {
-            "nombre": nombre_otra_persona,
-            "camino_vida": camino_vida_otra_persona,
-            "numero_compatibilidad": numero_compatibilidad,
-        },
+        {"nombre": nombre_otra_persona, **compatibilidad_completa},
         ensure_ascii=False,
     )
     mensaje = construir_mensaje_compatibilidad(contexto_json, datos_otra_persona)
 
     try:
-        return _llamar_ia(mensaje, max_tokens=800)
+        return _llamar_ia(mensaje, max_tokens=1000)
     except Exception:
         logger.exception("Error llamando a la IA en pedir_interpretacion_compatibilidad")
         return (

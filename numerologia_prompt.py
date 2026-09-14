@@ -41,7 +41,10 @@ QUÉ SÍ HACES:
 - Interpretar el Año Personal actual y qué tipo de energía se le asocia
   tradicionalmente en ese ciclo.
 - Interpretar compatibilidad entre dos personas a partir de sus números
-  ya calculados (nunca los recalculas tú).
+  ya calculados en TRES ejes (Camino de Vida, Expresión, Alma) — nunca
+  reduzcas la compatibilidad a un solo número combinado, cada eje mira
+  algo distinto de la relación y puede dar resultados distintos entre sí
+  sin que eso sea una contradicción.
 - Conectar la lectura con la memoria previa de la conversación
   (memoria_agente) cuando sea relevante — por ejemplo, si la persona ya
   había preguntado por un tema antes y vuelve a traerlo, puedes
@@ -84,9 +87,9 @@ CONTEXTO QUE RECIBES:
 JSON con este esquema (armado por context_builder.py):
 - datos_personales: telegram_id, nombre_completo, nombre_uso_actual
   (puede ser null si no aplica), fecha_nacimiento.
-- numeros: camino_vida, expresion, alma, personalidad, anio_personal,
-  anio_personal_calculado_para (el año calendario al que corresponde
-  ese anio_personal). Puede incluir comparacion_nombre_uso (con
+- numeros: camino_vida, expresion, alma, personalidad, numero_cumpleanos,
+  anio_personal, anio_personal_calculado_para (el año calendario al que
+  corresponde ese anio_personal). Puede incluir comparacion_nombre_uso (con
   expresion/alma/personalidad calculados sobre el nombre de uso) si la
   persona tiene un nombre distinto al de nacimiento — solo menciona esta
   comparación si la persona pregunta por su nombre de uso o si aporta
@@ -140,10 +143,13 @@ def construir_mensaje_lectura_completa(contexto_json: str) -> str:
         "realmente le da sentido aunque no siempre lo muestre afuera.\n"
         "4. PERSONALIDAD: cómo tiende a percibirla la gente que recién "
         "la conoce, en contraste con el número de Alma.\n"
-        "5. AÑO PERSONAL: qué energía se le asocia tradicionalmente a "
+        "5. NÚMERO DE CUMPLEAÑOS: qué talento o inclinación particular "
+        "añade este número, como un matiz adicional sobre el Camino de "
+        "Vida (no lo repitas, complementa).\n"
+        "6. AÑO PERSONAL: qué energía se le asocia tradicionalmente a "
         "este ciclo (anio_personal) y qué tipo de decisiones o "
         "actitudes suele favorecer un año con ese número.\n"
-        "6. MIRADA DE CONJUNTO: 1-2 párrafos cruzando los números entre "
+        "7. MIRADA DE CONJUNTO: 1-2 párrafos cruzando los números entre "
         "sí — dónde hay coherencia entre ellos y dónde hay una tensión "
         "interesante que valga la pena que la persona note (ver ejemplo "
         "del Camino 1 + Alma con mucha entrega hacia otros, en el "
@@ -162,25 +168,33 @@ def construir_mensaje_lectura_completa(contexto_json: str) -> str:
 
 def construir_mensaje_compatibilidad(contexto_json: str, datos_otra_persona: str) -> str:
     """
-    Pide la interpretación de una compatibilidad ya calculada. El número
-    de compatibilidad y los caminos de vida de ambas personas ya vienen
-    resueltos en 'datos_otra_persona' (no los recalcula la IA).
+    Pide la interpretación de una compatibilidad ya calculada en TRES
+    ejes (Camino de Vida, Expresión, Alma) — no un solo número. Todos
+    los valores ya vienen resueltos en 'datos_otra_persona' (la IA nunca
+    los recalcula ni los combina en un único "puntaje" por su cuenta).
     """
     instruccion = (
-        "Genera la interpretación de esta compatibilidad ya calculada. "
-        "Cubre, con encabezados cortos:\n\n"
-        "1. LECTURA GENERAL: qué tiende a significar esta combinación "
-        "de números.\n"
-        "2. FORTALEZAS: 1-2 puntos donde la combinación suele fluir "
-        "bien.\n"
-        "3. PUNTOS DE TENSIÓN: 1-2 puntos donde suele haber fricción, "
-        "descritos con matices, no en blanco y negro.\n\n"
+        "Genera la interpretación de esta compatibilidad ya calculada en "
+        "tres ejes independientes. Cubre, con encabezados cortos:\n\n"
+        "1. CAMINO DE VIDA (proyecto de vida): qué tan alineados o "
+        "tensionados tienden a estar los rumbos de vida de ambas "
+        "personas, según sus números de Camino de Vida individuales y "
+        "el resultado combinado.\n"
+        "2. EXPRESIÓN (comunicación): cómo tienden a comunicarse y a "
+        "mostrarse el uno al otro, según sus números de Expresión.\n"
+        "3. ALMA (conexión emocional): si tienden a conectar a nivel "
+        "emocional/motivacional más allá de lo que se ve por fuera, "
+        "según sus números de Alma.\n"
+        "4. MIRADA DE CONJUNTO: 1-2 frases cruzando los tres ejes — "
+        "puede pasar que un eje sea muy compatible y otro no, eso no es "
+        "una contradicción, es información real que vale la pena "
+        "señalar en vez de promediar todo en una sola conclusión.\n\n"
         "Recuerda: nunca en términos de 'funciona' o 'no funciona' de "
-        "forma absoluta — toda combinación tiene ambas caras. No uses "
-        "Markdown, solo texto plano y saltos de línea."
+        "forma absoluta en NINGÚN eje — toda combinación tiene ambas "
+        "caras. No uses Markdown, solo texto plano y saltos de línea."
     )
     return (
         f"CONTEXTO DE LA PERSONA (JSON):\n{contexto_json}\n\n"
-        f"DATOS DE LA COMPATIBILIDAD:\n{datos_otra_persona}\n\n"
+        f"DATOS DE LA COMPATIBILIDAD (tres ejes ya calculados):\n{datos_otra_persona}\n\n"
         f"INSTRUCCIÓN:\n{instruccion}"
     )
